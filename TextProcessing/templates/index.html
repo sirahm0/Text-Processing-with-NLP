@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NLP Text Processor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+
+<body>
+    <!-- Content Container -->
+    <div class="container">
+        <h1>Text Processing with NLP</h1>
+        <form id="textForm">
+            <textarea id="userInput" placeholder="Enter your text here..." required></textarea>
+            <button type="submit">Process</button>
+        </form>
+        <div id="outputContainer" class="hidden">
+            <h2>Processed Output</h2>
+            <p id="outputText"></p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById("textForm").addEventListener("submit", function (event) {
+            event.preventDefault(); // Prevent default form submission
+
+            const userInput = document.getElementById("userInput").value; // Get input text from the user
+
+            // Make the POST request to the server
+            fetch("/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json" // Set content type as JSON
+                },
+                body: JSON.stringify({ text: userInput }) // Send user input as JSON
+            })
+            .then(response => response.json()) // Parse the JSON response
+            .then(data => {
+                // Show the result in the output container
+                document.getElementById("outputContainer").classList.remove("hidden");
+
+                // Prepare the output for display in the desired format
+                let output = `
+                    <h3>Aspect Analysis Results:</h3>
+                `;
+
+                // Display Aspect Sentiment Analysis for each aspect
+                for (const [aspect, sentimentResults] of Object.entries(data.aspect_sentiments)) {
+                    output += `
+                        <p><strong>Aspect:</strong> ${aspect}</p>
+                        <p><strong>BERT Sentiment:</strong> ${sentimentResults["BERT Sentiment"].sentiment} (Confidence: ${sentimentResults["BERT Sentiment"].confidence})</p>
+                        <p><strong>Flair Sentiment:</strong> ${sentimentResults["Flair Sentiment"].sentiment} (Confidence: ${sentimentResults["Flair Sentiment"].confidence})</p>
+                    `;
+                }
+
+                // Display Emotion and Sentiment Results for the entire text
+                output += `
+                    <h3>Emotion Analysis:</h3>
+                    <p><strong>Emotion:</strong> ${data.emotion.emotion} ${data.emotion.emoji} (Confidence: ${data.emotion.confidence})</p>
+
+                    <h3>Sentiment Analysis:</h3>
+                    <p><strong>Sentiment:</strong> ${data.sentiment.sentiment} (Confidence: ${data.sentiment.confidence})</p>
+
+                    <h3>Persons Detected:</h3>
+                    <p>${data.persons.join(", ")}</p>
+                `;
+
+                document.getElementById("outputText").innerHTML = output;
+            })
+            .catch(error => {
+                console.error("Error:", error); // Log any errors
+                alert("There was an error processing your request. Please try again.");
+            });
+        });
+    </script>
+
+</body>
+
+</html>
